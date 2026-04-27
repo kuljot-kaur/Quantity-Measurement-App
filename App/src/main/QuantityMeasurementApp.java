@@ -19,7 +19,7 @@ public class QuantityMeasurementApp {
         }
     }
 
-    // ================= CORE VALUE CLASS =================
+    // ================= VALUE OBJECT =================
 
     public static class QuantityLength {
         private final double value;
@@ -27,7 +27,7 @@ public class QuantityMeasurementApp {
 
         public QuantityLength(double value, LengthUnit unit) {
             if (!Double.isFinite(value)) {
-                throw new IllegalArgumentException("Invalid numeric value");
+                throw new IllegalArgumentException("Invalid value");
             }
             if (unit == null) {
                 throw new IllegalArgumentException("Unit cannot be null");
@@ -40,12 +40,22 @@ public class QuantityMeasurementApp {
             return value * unit.getFactor();
         }
 
-        public double convertTo(LengthUnit targetUnit) {
-            if (targetUnit == null) {
-                throw new IllegalArgumentException("Target unit cannot be null");
+        // ================= ADDITION LOGIC =================
+
+        public static QuantityLength add(QuantityLength q1, QuantityLength q2, LengthUnit targetUnit) {
+
+            if (q1 == null || q2 == null || targetUnit == null) {
+                throw new IllegalArgumentException("Null values not allowed");
             }
-            double baseInches = this.toInches();
-            return baseInches / targetUnit.getFactor();
+
+            double q1Inches = q1.toInches();
+            double q2Inches = q2.toInches();
+
+            double sumInches = q1Inches + q2Inches;
+
+            double resultValue = sumInches / targetUnit.getFactor();
+
+            return new QuantityLength(resultValue, targetUnit);
         }
 
         @Override
@@ -57,16 +67,5 @@ public class QuantityMeasurementApp {
 
             return Math.abs(this.toInches() - that.toInches()) < 0.0001;
         }
-    }
-
-    // ================= STATIC API =================
-
-    public static double convert(double value, LengthUnit from, LengthUnit to) {
-        if (!Double.isFinite(value) || from == null || to == null) {
-            throw new IllegalArgumentException("Invalid input for conversion");
-        }
-
-        double baseInches = value * from.getFactor();
-        return baseInches / to.getFactor();
     }
 }
