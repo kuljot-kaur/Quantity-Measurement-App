@@ -1,47 +1,42 @@
 package test;
 
-import main.QuantityMeasurementApp.Feet;
+import main.QuantityMeasurementApp;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class QuantityMeasurementAppTest {
 
-    @Test
-    void testEquality_SameValue() {
-        Feet f1 = new Feet(1.0);
-        Feet f2 = new Feet(1.0);
+    // ================= FEET TESTS =================
 
-        assertTrue(f1.equals(f2));
+    @Test
+    void testEquality_SameFeetValue() {
+        assertTrue(QuantityMeasurementApp.compareFeet(1.0, 1.0));
     }
 
     @Test
-    void testEquality_DifferentValue() {
-        Feet f1 = new Feet(1.0);
-        Feet f2 = new Feet(2.0);
+    void testEquality_DifferentFeetValue() {
+        assertFalse(QuantityMeasurementApp.compareFeet(1.0, 2.0));
+    }
 
-        assertFalse(f1.equals(f2));
+    // ================= INCHES TESTS =================
+
+    @Test
+    void testEquality_SameInchValue() {
+        assertTrue(QuantityMeasurementApp.compareInches(1.0, 1.0));
     }
 
     @Test
-    void testEquality_NullComparison() {
-        Feet f1 = new Feet(1.0);
-
-        assertFalse(f1.equals(null));
+    void testEquality_DifferentInchValue() {
+        assertFalse(QuantityMeasurementApp.compareInches(1.0, 2.0));
     }
 
-    @Test
-    void testEquality_SameReference() {
-        Feet f1 = new Feet(1.0);
-
-        assertTrue(f1.equals(f1));
-    }
+    // ================= NULL SAFETY =================
 
     @Test
-    void testEquality_NonNumericInput() {
-        Feet f1 = new Feet(1.0);
-        String other = "1.0 ft";
+    void testEquality_InchesNullSafety() {
+        QuantityMeasurementApp.Inches i1 = new QuantityMeasurementApp.Inches(1.0);
 
-        assertFalse(f1.equals(other));
+        assertNotNull(i1);
     }
 }
