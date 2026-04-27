@@ -2,42 +2,28 @@ package main;
 
 import java.util.Objects;
 
+// ===================== MAIN CLASS =====================
 public class QuantityMeasurementApp {
 
-    // ===================== MAIN =====================
     public static void main(String[] args) {
 
-        // ===== UC11: VOLUME =====
-        Quantity<VolumeUnit> v1 = new Quantity<>(1.0, VolumeUnit.LITRE);
-        Quantity<VolumeUnit> v2 = new Quantity<>(1000.0, VolumeUnit.MILLILITRE);
-        Quantity<VolumeUnit> v3 = new Quantity<>(1.0, VolumeUnit.GALLON);
+        System.out.println("=== UC13 DEMO ===");
 
-        System.out.println("=== VOLUME OPERATIONS ===");
+        Quantity<VolumeUnit> q1 = new Quantity<>(1.0, VolumeUnit.LITRE);
+        Quantity<VolumeUnit> q2 = new Quantity<>(1000.0, VolumeUnit.MILLILITRE);
+        Quantity<VolumeUnit> q3 = new Quantity<>(2.0, VolumeUnit.LITRE);
 
-        // Equality
-        System.out.println("Equality Litre vs Millilitre: " + v1.equals(v2));
+        // ADDITION
+        System.out.println("Add: " + q1.add(q2));
 
-        // Conversion
-        System.out.println("Convert Litre to mL: " + v1.convertTo(VolumeUnit.MILLILITRE));
+        // SUBTRACTION
+        System.out.println("Subtract: " + q3.subtract(q1));
 
-        // Addition
-        System.out.println("Addition: " + v1.add(v2));
+        // SUBTRACTION with target unit
+        System.out.println("Subtract (ML): " + q3.subtract(q1, VolumeUnit.MILLILITRE));
 
-        // Subtraction
-        System.out.println("Subtraction: " +
-                v1.subtract(new Quantity<>(500.0, VolumeUnit.MILLILITRE)));
-
-        // Division
-        System.out.println("Division: " + v1.divide(v2));
-
-        System.out.println("\n=== UC12 OPERATIONS ===");
-
-        Quantity<VolumeUnit> a = new Quantity<>(5.0, VolumeUnit.LITRE);
-        Quantity<VolumeUnit> b = new Quantity<>(2.0, VolumeUnit.LITRE);
-
-        System.out.println("Subtraction: " + a.subtract(b));
-        System.out.println("Subtraction (ML): " + a.subtract(b, VolumeUnit.MILLILITRE));
-        System.out.println("Division: " + a.divide(b));
+        // DIVISION
+        System.out.println("Divide: " + q3.divide(q1));
     }
 }
 
@@ -79,6 +65,31 @@ enum VolumeUnit implements IMeasurable {
     }
 }
 
+// ===================== ARITHMETIC OPERATION ENUM (UC13 CORE) =====================
+enum ArithmeticOperation {
+
+    ADD {
+        public double compute(double a, double b) {
+            return a + b;
+        }
+    },
+
+    SUBTRACT {
+        public double compute(double a, double b) {
+            return a - b;
+        }
+    },
+
+    DIVIDE {
+        public double compute(double a, double b) {
+            if (b == 0) throw new ArithmeticException("Division by zero");
+            return a / b;
+        }
+    };
+
+    public abstract double compute(double a, double b);
+}
+
 // ===================== GENERIC QUANTITY CLASS =====================
 class Quantity<U extends IMeasurable> {
 
@@ -94,25 +105,61 @@ class Quantity<U extends IMeasurable> {
         this.unit = unit;
     }
 
-    // ---------- GETTERS ----------
-    public double getValue() {
-        return value;
-    }
-
-    public U getUnit() {
-        return unit;
-    }
-
-    // ---------- BASE CONVERSION ----------
+    // ===================== BASE CONVERSION =====================
     private double toBase() {
         return unit.convertToBaseUnit(value);
     }
 
-    private double fromBase(double base, U target) {
-        return target.convertFromBaseUnit(base);
+    private double fromBase(double baseValue, U target) {
+        return target.convertFromBaseUnit(baseValue);
     }
 
-    // ---------- EQUALITY ----------
+    // ===================== CENTRALIZED VALIDATION (UC13 CORE) =====================
+    private void validate(Quantity<U> other) {
+        if (other == null) throw new IllegalArgumentException("Quantity cannot be null");
+
+        if (!this.unit.getClass().equals(other.unit.getClass())) {
+            throw new IllegalArgumentException("Cross-category operation not allowed");
+        }
+
+        if (Double.isNaN(other.value) || Double.isInfinite(other.value)) {
+            throw new IllegalArgumentException("Invalid numeric value");
+        }
+    }
+
+    // ===================== CENTRALIZED ARITHMETIC (DRY CORE) =====================
+    private double performBaseArithmetic(Quantity<U> other, ArithmeticOperation op) {
+        validate(other);
+        return op.compute(this.toBase(), other.toBase());
+    }
+
+    // ===================== ADDITION =====================
+    public Quantity<U> add(Quantity<U> other) {
+        return add(other, this.unit);
+    }
+
+    public Quantity<U> add(Quantity<U> other, U target) {
+        double result = performBaseArithmetic(other, ArithmeticOperation.ADD);
+        return new Quantity<>(target.convertFromBaseUnit(result), target);
+    }
+
+    // ===================== SUBTRACTION =====================
+    public Quantity<U> subtract(Quantity<U> other) {
+        return subtract(other, this.unit);
+    }
+
+    public Quantity<U> subtract(Quantity<U> other, U target) {
+        double result = performBaseArithmetic(other, ArithmeticOperation.SUBTRACT);
+        return new Quantity<>(target.convertFromBaseUnit(result), target);
+    }
+
+    // ===================== DIVISION =====================
+    public double divide(Quantity<U> other) {
+        double result = performBaseArithmetic(other, ArithmeticOperation.DIVIDE);
+        return result;
+    }
+
+    // ===================== EQUALITY =====================
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -126,53 +173,6 @@ class Quantity<U extends IMeasurable> {
     @Override
     public int hashCode() {
         return Objects.hash(unit.getClass(), toBase());
-    }
-
-    // ---------- CONVERSION ----------
-    public Quantity<U> convertTo(U target) {
-        double base = toBase();
-        return new Quantity<>(target.convertFromBaseUnit(base), target);
-    }
-
-    // ---------- ADDITION ----------
-    public Quantity<U> add(Quantity<U> other) {
-        return add(other, this.unit);
-    }
-
-    public Quantity<U> add(Quantity<U> other, U target) {
-        double result = toBase() + other.toBase();
-        return new Quantity<>(target.convertFromBaseUnit(result), target);
-    }
-
-    // ---------- SUBTRACTION ----------
-    public Quantity<U> subtract(Quantity<U> other) {
-        return subtract(other, this.unit);
-    }
-
-    public Quantity<U> subtract(Quantity<U> other, U target) {
-        validate(other);
-
-        double result = toBase() - other.toBase();
-        return new Quantity<>(target.convertFromBaseUnit(result), target);
-    }
-
-    // ---------- DIVISION ----------
-    public double divide(Quantity<U> other) {
-        validate(other);
-
-        double divisor = other.toBase();
-        if (divisor == 0) throw new ArithmeticException("Division by zero");
-
-        return toBase() / divisor;
-    }
-
-    // ---------- VALIDATION ----------
-    private void validate(Quantity<U> other) {
-        if (other == null) throw new IllegalArgumentException("Null quantity");
-
-        if (!unit.getClass().equals(other.unit.getClass())) {
-            throw new IllegalArgumentException("Cross-category operation not allowed");
-        }
     }
 
     @Override
