@@ -2,25 +2,24 @@ package main;
 
 public class QuantityMeasurementApp {
 
-    // ================= UNIT ENUM =================
     public enum LengthUnit {
         FEET(12.0),
-        INCH(1.0);
+        INCH(1.0),
+        YARDS(36.0),
+        CENTIMETERS(0.393701);
 
-        private final double conversionFactor;
+        private final double unitValueInInch;
 
-        LengthUnit(double conversionFactor) {
-            this.conversionFactor = conversionFactor;
+        LengthUnit(double unitValueInInch) {
+            this.unitValueInInch = unitValueInInch;
         }
 
-        public double getConversionFactor() {
-            return conversionFactor;
+        public double getUnitValueInInch() {
+            return unitValueInInch;
         }
     }
 
-    // ================= GENERIC QUANTITY CLASS =================
     public static class QuantityLength {
-
         private final double value;
         private final LengthUnit unit;
 
@@ -29,30 +28,18 @@ public class QuantityMeasurementApp {
             this.unit = unit;
         }
 
-        // Convert everything to INCH as base unit
-        private double toBaseUnit() {
-            return this.value * this.unit.getConversionFactor();
+        private double convertToInches() {
+            return this.value * unit.getUnitValueInInch();
         }
 
         @Override
         public boolean equals(Object obj) {
-
             if (this == obj) return true;
             if (obj == null || getClass() != obj.getClass()) return false;
 
-            QuantityLength other = (QuantityLength) obj;
+            QuantityLength that = (QuantityLength) obj;
 
-            return Double.compare(this.toBaseUnit(), other.toBaseUnit()) == 0;
+            return Double.compare(this.convertToInches(), that.convertToInches()) == 0;
         }
-    }
-
-    // ================= MAIN =================
-    public static void main(String[] args) {
-
-        QuantityLength q1 = new QuantityLength(1.0, LengthUnit.FEET);
-        QuantityLength q2 = new QuantityLength(12.0, LengthUnit.INCH);
-
-        System.out.println("Input: 1.0 feet and 12.0 inch");
-        System.out.println("Output: " + q1.equals(q2));
     }
 }
