@@ -1,98 +1,182 @@
 package main;
 
+import java.util.Objects;
+
 public class QuantityMeasurementApp {
 
+    // ===================== MAIN =====================
     public static void main(String[] args) {
 
-        // =========================
-        // LENGTH OPERATIONS
-        // =========================
-        System.out.println("===== LENGTH =====");
+        // ===== UC11: VOLUME =====
+        Quantity<VolumeUnit> v1 = new Quantity<>(1.0, VolumeUnit.LITRE);
+        Quantity<VolumeUnit> v2 = new Quantity<>(1000.0, VolumeUnit.MILLILITRE);
+        Quantity<VolumeUnit> v3 = new Quantity<>(1.0, VolumeUnit.GALLON);
 
-        Quantity<LengthUnit> length1 =
-                new Quantity<>(1.0, LengthUnit.FEET);
-        Quantity<LengthUnit> length2 =
-                new Quantity<>(12.0, LengthUnit.INCHES);
+        System.out.println("=== VOLUME OPERATIONS ===");
 
-        System.out.println("Equal (Feet vs Inches): " +
-                length1.equals(length2));
+        // Equality
+        System.out.println("Equality Litre vs Millilitre: " + v1.equals(v2));
 
-        System.out.println("Add Length (default unit): " +
-                length1.add(length2));
+        // Conversion
+        System.out.println("Convert Litre to mL: " + v1.convertTo(VolumeUnit.MILLILITRE));
 
-        System.out.println("Add Length (Yards): " +
-                length1.add(length2, LengthUnit.YARDS));
+        // Addition
+        System.out.println("Addition: " + v1.add(v2));
 
-        System.out.println("Convert Feet to Inches: " +
-                length1.convertTo(LengthUnit.INCHES));
+        // Subtraction
+        System.out.println("Subtraction: " +
+                v1.subtract(new Quantity<>(500.0, VolumeUnit.MILLILITRE)));
 
+        // Division
+        System.out.println("Division: " + v1.divide(v2));
 
-        // =========================
-        // WEIGHT OPERATIONS
-        // =========================
-        System.out.println("\n===== WEIGHT =====");
+        System.out.println("\n=== UC12 OPERATIONS ===");
 
-        Quantity<WeightUnit> weight1 =
-                new Quantity<>(1.0, WeightUnit.KILOGRAM);
-        Quantity<WeightUnit> weight2 =
-                new Quantity<>(1000.0, WeightUnit.GRAM);
+        Quantity<VolumeUnit> a = new Quantity<>(5.0, VolumeUnit.LITRE);
+        Quantity<VolumeUnit> b = new Quantity<>(2.0, VolumeUnit.LITRE);
 
-        System.out.println("Equal (Kg vs Gram): " +
-                weight1.equals(weight2));
+        System.out.println("Subtraction: " + a.subtract(b));
+        System.out.println("Subtraction (ML): " + a.subtract(b, VolumeUnit.MILLILITRE));
+        System.out.println("Division: " + a.divide(b));
+    }
+}
 
-        System.out.println("Add Weight (default unit): " +
-                weight1.add(weight2));
+// ===================== IMEASURABLE =====================
+interface IMeasurable {
+    double getConversionFactor();
+    double convertToBaseUnit(double value);
+    double convertFromBaseUnit(double baseValue);
+    String getUnitName();
+}
 
-        System.out.println("Add Weight (Gram): " +
-                weight1.add(weight2, WeightUnit.GRAM));
+// ===================== VOLUME UNIT =====================
+enum VolumeUnit implements IMeasurable {
 
-        System.out.println("Convert Kg to Gram: " +
-                weight1.convertTo(WeightUnit.GRAM));
+    LITRE(1.0),
+    MILLILITRE(0.001),
+    GALLON(3.78541);
 
+    private final double factor;
 
-        // =========================
-        // VOLUME OPERATIONS
-        // =========================
-        System.out.println("\n===== VOLUME =====");
+    VolumeUnit(double factor) {
+        this.factor = factor;
+    }
 
-        Quantity<VolumeUnit> volume1 =
-                new Quantity<>(1.0, VolumeUnit.LITRE);
-        Quantity<VolumeUnit> volume2 =
-                new Quantity<>(1000.0, VolumeUnit.MILLILITRE);
-        Quantity<VolumeUnit> volume3 =
-                new Quantity<>(1.0, VolumeUnit.GALLON);
+    public double getConversionFactor() {
+        return factor;
+    }
 
-        System.out.println("Equal (Litre vs Millilitre): " +
-                volume1.equals(volume2));
+    public double convertToBaseUnit(double value) {
+        return value * factor;
+    }
 
-        System.out.println("Equal (Litre vs Gallon): " +
-                volume1.equals(volume3));
+    public double convertFromBaseUnit(double baseValue) {
+        return baseValue / factor;
+    }
 
-        System.out.println("Convert Litre to Millilitre: " +
-                volume1.convertTo(VolumeUnit.MILLILITRE));
+    public String getUnitName() {
+        return name();
+    }
+}
 
-        System.out.println("Convert Gallon to Litre: " +
-                volume3.convertTo(VolumeUnit.LITRE));
+// ===================== GENERIC QUANTITY CLASS =====================
+class Quantity<U extends IMeasurable> {
 
-        System.out.println("Add Volume (default unit): " +
-                volume1.add(volume2));
+    private final double value;
+    private final U unit;
 
-        System.out.println("Add Volume (Gallon result): " +
-                volume1.add(volume3, VolumeUnit.GALLON));
+    public Quantity(double value, U unit) {
+        if (unit == null) throw new IllegalArgumentException("Unit cannot be null");
+        if (Double.isNaN(value) || Double.isInfinite(value))
+            throw new IllegalArgumentException("Invalid value");
 
+        this.value = value;
+        this.unit = unit;
+    }
 
-        // =========================
-        // CROSS CATEGORY SAFETY
-        // =========================
-        System.out.println("\n===== CROSS CATEGORY =====");
+    // ---------- GETTERS ----------
+    public double getValue() {
+        return value;
+    }
 
-        System.out.println("Length vs Weight equal? " +
-                length1.equals(weight1));
+    public U getUnit() {
+        return unit;
+    }
 
-        System.out.println("Weight vs Volume equal? " +
-                weight1.equals(volume1));
+    // ---------- BASE CONVERSION ----------
+    private double toBase() {
+        return unit.convertToBaseUnit(value);
+    }
 
-        System.out.println("Length vs Volume equal? " +
-                length1.equals(volume1));
+    private double fromBase(double base, U target) {
+        return target.convertFromBaseUnit(base);
+    }
+
+    // ---------- EQUALITY ----------
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Quantity<?> other)) return false;
+
+        if (!unit.getClass().equals(other.unit.getClass())) return false;
+
+        return Math.abs(this.toBase() - other.toBase()) < 0.0001;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(unit.getClass(), toBase());
+    }
+
+    // ---------- CONVERSION ----------
+    public Quantity<U> convertTo(U target) {
+        double base = toBase();
+        return new Quantity<>(target.convertFromBaseUnit(base), target);
+    }
+
+    // ---------- ADDITION ----------
+    public Quantity<U> add(Quantity<U> other) {
+        return add(other, this.unit);
+    }
+
+    public Quantity<U> add(Quantity<U> other, U target) {
+        double result = toBase() + other.toBase();
+        return new Quantity<>(target.convertFromBaseUnit(result), target);
+    }
+
+    // ---------- SUBTRACTION ----------
+    public Quantity<U> subtract(Quantity<U> other) {
+        return subtract(other, this.unit);
+    }
+
+    public Quantity<U> subtract(Quantity<U> other, U target) {
+        validate(other);
+
+        double result = toBase() - other.toBase();
+        return new Quantity<>(target.convertFromBaseUnit(result), target);
+    }
+
+    // ---------- DIVISION ----------
+    public double divide(Quantity<U> other) {
+        validate(other);
+
+        double divisor = other.toBase();
+        if (divisor == 0) throw new ArithmeticException("Division by zero");
+
+        return toBase() / divisor;
+    }
+
+    // ---------- VALIDATION ----------
+    private void validate(Quantity<U> other) {
+        if (other == null) throw new IllegalArgumentException("Null quantity");
+
+        if (!unit.getClass().equals(other.unit.getClass())) {
+            throw new IllegalArgumentException("Cross-category operation not allowed");
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "Quantity(" + value + ", " + unit.getUnitName() + ")";
     }
 }
