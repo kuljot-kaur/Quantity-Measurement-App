@@ -1,71 +1,86 @@
 package main;
 
-public class QuantityMeasurementApp {
+enum LengthUnit {
+    FEET(1.0),
+    INCH(1.0 / 12.0),
+    YARD(3.0),
+    CENTIMETER(1.0 / 30.48);
 
-    public enum LengthUnit {
-        FEET(12.0),
-        INCH(1.0),
-        YARDS(36.0),
-        CENTIMETERS(0.393701);
+    private final double factor;
 
-        private final double factor;
-
-        LengthUnit(double factor) {
-            this.factor = factor;
-        }
-
-        public double getFactor() {
-            return factor;
-        }
+    LengthUnit(double factor) {
+        this.factor = factor;
     }
 
-    // ================= VALUE OBJECT =================
+    public double getFactor() {
+        return factor;
+    }
+}
 
-    public static class QuantityLength {
-        private final double value;
-        private final LengthUnit unit;
+class QuantityLength {
+    private final double value;
+    private final LengthUnit unit;
 
-        public QuantityLength(double value, LengthUnit unit) {
-            if (!Double.isFinite(value)) {
-                throw new IllegalArgumentException("Invalid value");
-            }
-            if (unit == null) {
-                throw new IllegalArgumentException("Unit cannot be null");
-            }
-            this.value = value;
-            this.unit = unit;
+    public QuantityLength(double value, LengthUnit unit) {
+        if (unit == null) throw new IllegalArgumentException("Unit null");
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            throw new IllegalArgumentException("Invalid value");
+        }
+        this.value = value;
+        this.unit = unit;
+    }
+
+    private double toFeet() {
+        return value * unit.getFactor();
+    }
+
+    public static double convert(double value, LengthUnit from, LengthUnit to) {
+        if (from == null || to == null) {
+            throw new IllegalArgumentException("Unit null");
         }
 
-        private double toInches() {
-            return value * unit.getFactor();
-        }
+        double feet = value * from.getFactor();
+        return feet / to.getFactor();
+    }
 
-        // ================= ADDITION LOGIC =================
+    public QuantityLength add(QuantityLength other, LengthUnit target) {
+        double sum = this.toFeet() + other.toFeet();
+        return new QuantityLength(sum / target.getFactor(), target);
+    }
 
-        public static QuantityLength add(QuantityLength q1, QuantityLength q2, LengthUnit targetUnit) {
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof QuantityLength)) return false;
 
-            if (q1 == null || q2 == null || targetUnit == null) {
-                throw new IllegalArgumentException("Null values not allowed");
-            }
+        QuantityLength other = (QuantityLength) obj;
+        return Double.compare(this.toFeet(), other.toFeet()) == 0;
+    }
 
-            double q1Inches = q1.toInches();
-            double q2Inches = q2.toInches();
+    @Override
+    public String toString() {
+        return "Quantity(" + value + ", " + unit + ")";
+    }
+}
 
-            double sumInches = q1Inches + q2Inches;
+public class QuantityMeasurementApp {
 
-            double resultValue = sumInches / targetUnit.getFactor();
+    public static double convert(double value, LengthUnit from, LengthUnit to) {
+        return QuantityLength.convert(value, from, to);
+    }
 
-            return new QuantityLength(resultValue, targetUnit);
-        }
+    public static QuantityLength add(double v1, LengthUnit u1,
+                                     double v2, LengthUnit u2,
+                                     LengthUnit target) {
+        return new QuantityLength(v1, u1)
+                .add(new QuantityLength(v2, u2), target);
+    }
 
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof QuantityLength)) return false;
+    public static void main(String[] args) {
 
-            QuantityLength that = (QuantityLength) obj;
+        System.out.println(convert(1.0, LengthUnit.FEET, LengthUnit.INCH));
+        System.out.println(convert(3.0, LengthUnit.YARD, LengthUnit.FEET));
 
-            return Math.abs(this.toInches() - that.toInches()) < 0.0001;
-        }
+        System.out.println(add(1.0, LengthUnit.FEET, 12.0, LengthUnit.INCH, LengthUnit.FEET));
     }
 }
